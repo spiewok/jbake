@@ -74,8 +74,7 @@ public class CrawlerTest {
 	@Test
 	public void renderWithPrettyUrls() throws Exception {
 	    Map<String, Object> testProperties = new HashMap<String, Object>();
-	    testProperties.put(Keys.URI_NO_EXTENSION, true);
-	    testProperties.put(Keys.URI_NO_EXTENSION_PREFIX, "/blog");
+	    testProperties.put(Keys.URI_NO_EXTENSION, "/blog");
 
 	    CompositeConfiguration config = new CompositeConfiguration();
 	    config.addConfiguration(new MapConfiguration(testProperties));

@@ -86,20 +86,22 @@ public class Engines {
      * @return null if the engine is not available, an instance of the engine otherwise
      */
     private static ParserEngine tryLoadEngine(String engineClassName) {
+        ParserEngine engine = null;
+        
         try {
             @SuppressWarnings("unchecked")
             Class<? extends ParserEngine> engineClass = (Class<? extends ParserEngine>) Class.forName(engineClassName, false, Engines.class.getClassLoader());
-            return engineClass.newInstance();
-        } catch (ClassNotFoundException e) {
-            return new ErrorEngine(engineClassName);
-        } catch (InstantiationException e) {
-            return new ErrorEngine(engineClassName);
-        } catch (IllegalAccessException e) {
-            return new ErrorEngine(engineClassName);
-        } catch (NoClassDefFoundError e) {
-            // a dependency of the engine may not be found on classpath
-            return new ErrorEngine(engineClassName);
+            
+            try {
+                engine = engineClass.newInstance();
+            } catch (NoClassDefFoundError e) {
+                LOGGER.error("Class for " + engineClassName + " not found");
+            }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            LOGGER.warn("Unable to load a suitable rendering engine for extensions {}", engineClassName);
         }
+        
+        return engine;
     }
 
     /**
@@ -109,19 +111,25 @@ public class Engines {
     private static void loadEngines() {
         try {
             ClassLoader cl = Engines.class.getClassLoader();
+            
+            
             Enumeration<URL> resources = cl.getResources("META-INF/org.jbake.parser.MarkupEngines.properties");
+            
             while (resources.hasMoreElements()) {
                 URL url = resources.nextElement();
+
                 Properties props = new Properties();
                 props.load(url.openStream());
+                
                 for (Map.Entry<Object, Object> entry : props.entrySet()) {
                     String className = (String) entry.getKey();
                     String[] extensions = ((String)entry.getValue()).split(",");
                     registerEngine(className, extensions);
                 }
             }
+            
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Couldn't load the Engines", e);
         }
     }
 
@@ -130,9 +138,6 @@ public class Engines {
         if (engine != null) {
             for (String extension : extensions) {
                 register(extension, engine);
-            }
-            if (engine instanceof ErrorEngine) {
-                LOGGER.warn("Unable to load a suitable rendering engine for extensions {}", Arrays.toString(extensions));
             }
         }
     }

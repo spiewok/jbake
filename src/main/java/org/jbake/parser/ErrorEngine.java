@@ -11,6 +11,7 @@ import org.jbake.app.Crawler.Attributes;
  *
  * @author Cédric Champeau
  */
+@Deprecated
 public class ErrorEngine extends MarkupEngine {
     private final String engineName;
 

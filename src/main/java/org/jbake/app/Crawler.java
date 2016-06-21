@@ -42,6 +42,7 @@ public class Crawler {
 			static final String DRAFT = "draft";
 		}
 		static final String CACHED = "cached";
+                static final String DELETED = "deleted";
 		static final String DATE = "date";
 		static final String STATUS = "status";
 		static final String TYPE = "type";
@@ -55,7 +56,6 @@ public class Crawler {
 		static final String SHA1 = "sha1";
 		static final String ROOTPATH = "rootpath";
 		static final String ID = "id";
-		static final String NO_EXTENSION_URI = "noExtensionUri";
 		
 	}
     private static final Logger LOGGER = LoggerFactory.getLogger(Crawler.class);
@@ -82,18 +82,28 @@ public class Crawler {
      */
     public void crawl(File path) {
         File[] contents = path.listFiles(FileUtil.getFileFilter());
+        
         if (contents != null) {
+            
             Arrays.sort(contents);
+            
             for (File sourceFile : contents) {
+                
                 if (sourceFile.isFile()) {
+                
                     StringBuilder sb = new StringBuilder();
                     sb.append("Processing [").append(sourceFile.getPath()).append("]... ");
+                    
                     String sha1 = buildHash(sourceFile);
                     String uri = buildURI(sourceFile);
+                    
                     boolean process = true;
                     DocumentStatus status = DocumentStatus.NEW;
+                    
                     for (String docType : DocumentTypes.getDocumentTypes()) {
+                    
                         status = findDocumentStatus(docType, uri, sha1);
+                        
                         switch (status) {
                             case UPDATED:
                                 sb.append(" : modified ");
@@ -101,8 +111,10 @@ public class Crawler {
                                 break;
                             case IDENTICAL:
                                 sb.append(" : same ");
+                                db.markAsChecked(docType, uri);
                                 process = false;
                         }
+                        
                         if (!process) {
                             break;
                         }
@@ -135,18 +147,12 @@ public class Crawler {
     
     private String buildURI(final File sourceFile) {
     	String uri = FileUtil.asPath(sourceFile.getPath()).replace(FileUtil.asPath( contentPath), "");
-    	
-    	boolean noExtensionUri = config.getBoolean(Keys.URI_NO_EXTENSION);
-    	String noExtensionUriPrefix = config.getString(Keys.URI_NO_EXTENSION_PREFIX);
-    	if (noExtensionUri && noExtensionUriPrefix != null && noExtensionUriPrefix.length() > 0) {
-        	// convert URI from xxx.html to xxx/index.html
-    		if (uri.startsWith(noExtensionUriPrefix)) {
-    			uri = "/" + FilenameUtils.getPath(uri) + FilenameUtils.getBaseName(uri) + "/index" + config.getString(Keys.OUTPUT_EXTENSION);
-    		}
+    	String noExtensionUrlFolder = config.getString(Keys.URI_NO_EXTENSION);
+        if (!noExtensionUrlFolder.equals("false") && uri.startsWith(noExtensionUrlFolder)) {
+            uri = "/" + FilenameUtils.getPath(uri) + FilenameUtils.getBaseName(uri) + "/index" + config.getString(Keys.OUTPUT_EXTENSION);
         } else {
             uri = uri.substring(0, uri.lastIndexOf(".")) + config.getString(Keys.OUTPUT_EXTENSION);
         }
-    	
         // strip off leading / to enable generating non-root based sites
     	if (uri.startsWith("/")) {
     		uri = uri.substring(1, uri.length());
@@ -156,18 +162,22 @@ public class Crawler {
 
     private void crawlSourceFile(final File sourceFile, final String sha1, final String uri) {
         Map<String, Object> fileContents = parser.processFile(sourceFile);
+        
         if (fileContents != null) {
-        	fileContents.put(Attributes.ROOTPATH, getPathToRoot(sourceFile));
+            
+            fileContents.put(Attributes.ROOTPATH, getPathToRoot(sourceFile));
             fileContents.put(Attributes.SHA1, sha1);
             fileContents.put(Attributes.RENDERED, false);
+            fileContents.put(Attributes.FILE, sourceFile.getPath());
+            fileContents.put(Attributes.SOURCE_URI, uri);
+            fileContents.put(Attributes.URI, uri);
+            
             if (fileContents.get(Attributes.TAGS) != null) {
                 // store them as a String[]
                 String[] tags = (String[]) fileContents.get(Attributes.TAGS);
                 fileContents.put(Attributes.TAGS, tags);
             }
-            fileContents.put(Attributes.FILE, sourceFile.getPath());
-            fileContents.put(Attributes.SOURCE_URI, uri);
-            fileContents.put(Attributes.URI, uri);
+            
 
             String documentType = (String) fileContents.get(Attributes.TYPE);
             if (fileContents.get(Attributes.STATUS).equals(Status.PUBLISHED_DATE)) {
@@ -178,15 +188,19 @@ public class Crawler {
                 }
             }
             
-            if (config.getBoolean(Keys.URI_NO_EXTENSION)) {
-            	fileContents.put(Attributes.NO_EXTENSION_URI, uri.replace("/index.html", "/"));
+            if (!config.getString(Keys.URI_NO_EXTENSION).equals("false")) {
+                fileContents.put("noExtensionUri", uri.replace("/index.html", "/"));
             }
             
             ODocument doc = new ODocument(documentType);
-            doc.fields(fileContents);
+            doc.fromMap(fileContents);
+            
             boolean cached = fileContents.get(Attributes.CACHED) != null ? Boolean.valueOf((String)fileContents.get(Attributes.CACHED)):true;
             doc.field(Attributes.CACHED, cached);
+            doc.field(Attributes.DELETED, false);
+            
             doc.save();
+            
         } else {
             LOGGER.warn("{} has an invalid header, it has been ignored!", sourceFile);
         }
@@ -200,7 +214,7 @@ public class Crawler {
     		parentPath = parentPath.getParentFile();
     		parentCount++;
     	}
-    	StringBuffer sb = new StringBuffer();
+    	StringBuilder sb = new StringBuilder();
     	for (int i = 0; i < parentCount; i++) {
     		sb.append("../");
     	}

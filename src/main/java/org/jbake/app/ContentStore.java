@@ -23,8 +23,7 @@
  */
 package org.jbake.app;
 
-import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
-import com.orientechnologies.orient.core.db.document.ODatabaseDocumentPool;
+import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OSchema;
@@ -39,12 +38,17 @@ import java.util.List;
 import java.util.Set;
 
 import org.jbake.model.DocumentTypes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author jdlee
  */
 public class ContentStore {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContentStore.class);
+
     public static final String PUBLISHED_DATE = "published_date";
     public static final String TAG_POSTS = "tag_posts";
     public static final String ALLTAGS = "alltags";
@@ -54,43 +58,60 @@ public class ContentStore {
     public static final String PUBLISHED_POSTS = "published_posts";
     public static final String DATABASE = "db";
 
-    private ODatabaseDocumentTx db;
+    private ODatabaseDocument db;
     private long start = -1;
     private long limit = -1;
 
+
+
     public ContentStore(final String type, String name) {
+
         db = new ODatabaseDocumentTx(type + ":" + name);
         boolean exists = db.exists();
         if (!exists) {
             db.create();
         }
-        db = ODatabaseDocumentPool.global().acquire(type + ":" + name, "admin", "admin");
-        ODatabaseRecordThreadLocal.INSTANCE.set(db);
+
+        db.activateOnCurrentThread();
+        db.open("admin", "admin");
+
         if (!exists) {
             updateSchema();
         }
     }
 
+
+
     public long getStart() {
         return start;
     }
+
+
 
     public void setStart(int start) {
         this.start = start;
     }
 
+
+
     public long getLimit() {
         return limit;
     }
 
+
+
     public void setLimit(int limit) {
         this.limit = limit;
     }
-    
+
+
+
     public void resetPagination() {
         this.start = -1;
         this.limit = -1;
     }
+
+
 
     public final void updateSchema() {
         OSchema schema = db.getMetadata().getSchema();
@@ -107,35 +128,51 @@ public class ContentStore {
         }
     }
 
+
+
     public void close() {
-        db.close();
         DBUtil.closeDataStore();
+        db.close();
     }
+
+
 
     public void drop() {
         db.drop();
     }
 
+
+
     public long countClass(String iClassName) {
         return db.countClass(iClassName);
     }
+
+
 
     public List<ODocument> getDocumentStatus(String docType, String uri) {
         return query("select sha1,rendered from " + docType + " where sourceuri=?", uri);
 
     }
 
+
+
     public List<ODocument> getPublishedPosts() {
         return getPublishedContent("post");
     }
+
+
 
     public List<ODocument> getPublishedPostsByTag(String tag) {
         return query("select * from post where status='published' where ? in tags order by date desc", tag);
     }
 
+
+
     public List<ODocument> getPublishedPages() {
         return getPublishedContent("page");
     }
+
+
 
     public List<ODocument> getPublishedContent(String docType) {
         String query = "select * from " + docType + " where status='published'";
@@ -145,6 +182,8 @@ public class ContentStore {
         return query(query + " order by date desc");
     }
 
+
+
     public List<ODocument> getAllContent(String docType) {
         String query = "select * from " + docType;
         if ((start >= 0) && (limit > -1)) {
@@ -153,60 +192,104 @@ public class ContentStore {
         return query(query + " order by date desc");
     }
 
+
+
     public List<ODocument> getAllTagsFromPublishedPosts() {
         return query("select tags from post where status='published'");
     }
+
+
 
     public List<ODocument> getSignaturesForTemplates() {
         return query("select sha1 from Signatures where key='templates'");
     }
 
+
+
     public List<ODocument> getUnrenderedContent(String docType) {
         return query("select * from " + docType + " where rendered=false");
     }
+
+
 
     public void deleteContent(String docType, String uri) {
         executeCommand("delete from " + docType + " where sourceuri=?", uri);
     }
 
+
+
     public void markConentAsRendered(String docType) {
         executeCommand("update " + docType + " set rendered=true where rendered=false and cached=true");
     }
+
+
 
     public void updateSignatures(String currentTemplatesSignature) {
         executeCommand("update Signatures set sha1=? where key='templates'", currentTemplatesSignature);
     }
 
+
+
     public void deleteAllByDocType(String docType) {
         executeCommand("delete from " + docType);
     }
+
+
 
     public void insertSignature(String currentTemplatesSignature) {
         executeCommand("insert into Signatures(key,sha1) values('templates',?)", currentTemplatesSignature);
     }
 
+
+
+    protected void markAllNotChecked(String docType) {
+        executeCommand("update " + docType + " set checked=false");
+    }
+
+
+
+    protected void markAsChecked(String docType, String uri) {
+        executeCommand("update " + docType + " set checked=true where sourceuri=?", uri);
+    }
+
+
+
+    protected void deleteNotChecked(String docType) {
+        executeCommand("delete from " + docType + " where checked=false");
+    }
+
+
+
     private List<ODocument> query(String sql) {
         return db.query(new OSQLSynchQuery<ODocument>(sql));
     }
-    
+
+
+
     private List<ODocument> query(String sql, Object... args) {
         return db.command(new OSQLSynchQuery<ODocument>(sql)).execute(args);
     }
+
+
 
     private void executeCommand(String query, Object... args) {
         db.command(new OCommandSQL(query)).execute(args);
     }
 
+
+
     public Set<String> getTags() {
-    	List<ODocument> docs = this.getAllTagsFromPublishedPosts();
-	    Set<String> result = new HashSet<String>();
-	    for (ODocument document : docs) {
-	        String[] tags = DBUtil.toStringArray(document.field("tags"));
-	        Collections.addAll(result, tags);
-	    }
-	    return result;
+        List<ODocument> docs = this.getAllTagsFromPublishedPosts();
+        Set<String> result = new HashSet<String>();
+        for (ODocument document : docs) {
+            String[] tags = DBUtil.toStringArray(document.field("tags"));
+            Collections.addAll(result, tags);
+        }
+        return result;
     }
-    
+
+
+
     private static void createDocType(final OSchema schema, final String doctype) {
         OClass page = schema.createClass(doctype);
         page.createProperty("sha1", OType.STRING).setNotNull(true);
@@ -219,4 +302,5 @@ public class ContentStore {
         //page.createIndex("uriIdx", OClass.INDEX_TYPE.UNIQUE, "uri");
         //page.createIndex("renderedIdx", OClass.INDEX_TYPE.NOTUNIQUE, "rendered");
     }
+
 }

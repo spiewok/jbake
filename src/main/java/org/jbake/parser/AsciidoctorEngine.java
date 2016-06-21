@@ -1,17 +1,6 @@
 package org.jbake.parser;
 
-import org.apache.commons.configuration.CompositeConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.asciidoctor.Asciidoctor;
-import org.asciidoctor.Attributes;
-import org.asciidoctor.AttributesBuilder;
-import org.asciidoctor.ast.DocumentHeader;
-import org.asciidoctor.Options;
 import org.jbake.app.ConfigUtil.Keys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -25,7 +14,6 @@ import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.AttributesBuilder;
 import org.asciidoctor.Options;
 import org.asciidoctor.ast.DocumentHeader;
-import org.jbake.app.ConfigUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
