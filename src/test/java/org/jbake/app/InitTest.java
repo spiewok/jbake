@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.apache.commons.configuration.CompositeConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
 import org.jbake.app.ConfigUtil.Keys;
 import org.jbake.launcher.Init;
 import org.junit.Before;
