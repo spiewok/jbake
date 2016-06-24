@@ -12,21 +12,24 @@ import org.slf4j.LoggerFactory;
 public class DBUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(DBUtil.class);    
     
-    private static ContentStore contentStore;
+    private ContentStore contentStore;
     
-    public static ContentStore createDataStore(final String type, String name) {
+    public DBUtil(final String type, String name) {
         if (contentStore == null) {
             contentStore = new ContentStore(type, name);
         }
-        return contentStore;
     }
     
-    public static void close() {
+    public void close() {
         if(contentStore!=null) {
             contentStore.close();
         }
         
         contentStore = null;
+    }
+    
+    public ContentStore getContentStore() {
+        return contentStore;
     }
     
     public static void updateSchema(final ContentStore db) {

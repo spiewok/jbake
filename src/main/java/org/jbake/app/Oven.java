@@ -158,8 +158,11 @@ public class Oven {
     public void bake() {
         ContentStore contentStore = null;
 
+        DBUtil util = null;
+
         try {
-            contentStore = DBUtil.createDataStore(config.getString(Keys.DB_STORE), config.getString(Keys.DB_PATH));
+            util = new DBUtil(config.getString(Keys.DB_STORE), config.getString(Keys.DB_PATH));
+            contentStore = util.getContentStore();
 
             // Mark docs as checked.
             // Checked Docs maybe deleted as last step, if they are not verified to
@@ -169,12 +172,12 @@ public class Oven {
             }
 
             updateDocTypesFromConfiguration();
-            DBUtil.updateSchema(contentStore);
+            util.updateSchema(contentStore);
 
             final long start = new Date().getTime();
             LOGGER.info("Baking has started...");
 
-            clearCacheIfNeeded(contentStore);
+            clearCacheIfNeeded(util);
 
             // process source content
             Crawler crawler = new Crawler(contentStore, source, config);
@@ -220,9 +223,9 @@ public class Oven {
                 LOGGER.error("Failed to bake {} item(s)!", errors.size());
             }
         } finally {
-            if (contentStore != null) {
+            if (contentStore != null && util!=null) {
                 LOGGER.info(String.format("Closing database: %s", contentStore.toString()));
-                DBUtil.close();
+                util.close();
             }
         }
     }
@@ -255,10 +258,10 @@ public class Oven {
 
 
 
-    private void clearCacheIfNeeded(final ContentStore db) {
+    private void clearCacheIfNeeded(final DBUtil util) {
         boolean needed = isClearCache;
         if (!needed) {
-            List<ODocument> docs = db.getSignaturesForTemplates();
+            List<ODocument> docs = util.getContentStore().getSignaturesForTemplates();
             String currentTemplatesSignature;
             try {
                 currentTemplatesSignature = FileUtil.sha1(templatesPath);
@@ -269,23 +272,23 @@ public class Oven {
                 String sha1 = docs.get(0).field("sha1");
                 needed = !sha1.equals(currentTemplatesSignature);
                 if (needed) {
-                    db.updateSignatures(currentTemplatesSignature);
+                    util.getContentStore().updateSignatures(currentTemplatesSignature);
                 }
             } else {
                 // first computation of templates signature
-                db.insertSignature(currentTemplatesSignature);
+                util.getContentStore().insertSignature(currentTemplatesSignature);
                 needed = true;
             }
         }
         if (needed) {
             for (String docType : DocumentTypes.getDocumentTypes()) {
                 try {
-                    db.deleteAllByDocType(docType);
+                    util.getContentStore().deleteAllByDocType(docType);
                 } catch (Exception e) {
                     // maybe a non existing document type
                 }
             }
-            DBUtil.updateSchema(db);
+            DBUtil.updateSchema(util.getContentStore());
         }
     }
 
