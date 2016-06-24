@@ -137,17 +137,22 @@ public class ContentStore {
     
     
     public final void updateSchema() {
+        LOGGER.info("Updating Schema");
         OSchema schema = db.getMetadata().getSchema();
         for (String docType : DocumentTypes.getDocumentTypes()) {
             if (schema.getClass(docType) == null) {
+                LOGGER.info(String.format("Creating doctype: %s", docType));
                 createDocType(schema, docType);
+                LOGGER.info(String.format("Created doctype: %s", docType));
             }
         }
         if (schema.getClass("Signatures") == null) {
+            LOGGER.info(String.format("Creating Signatures"));
             // create the sha1 signatures class
             OClass signatures = schema.createClass("Signatures");
             signatures.createProperty("key", OType.STRING).setNotNull(true);
             signatures.createProperty("sha1", OType.STRING).setNotNull(true);
+            LOGGER.info(String.format("Created Signatures"));
         }
     }
     
