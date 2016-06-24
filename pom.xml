@@ -237,11 +237,11 @@
             <version>${freemarker.version}</version>
             <optional>true</optional>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>com.orientechnologies</groupId>
             <artifactId>orient-commons</artifactId>
             <version>${orientdb.commons}</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>com.orientechnologies</groupId>
             <artifactId>orientdb-core</artifactId>
