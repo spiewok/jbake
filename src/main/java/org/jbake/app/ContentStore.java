@@ -89,7 +89,7 @@ public class ContentStore {
             LOGGER.error("Couldn't open the database. Reason follows", ex);
         }
         
-        db.activateOnCurrentThread();
+        //db.activateOnCurrentThread();
         
         try {
             LOGGER.info(String.format("Trying to open Database now -> %s:%s", type, name));
