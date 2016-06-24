@@ -72,9 +72,13 @@ public class ContentStore {
             db.create();
         }
 
+        try {
         db.activateOnCurrentThread();
         db.open("admin", "admin");
-
+        } catch (Exception ex) {
+            LOGGER.error("Couldn't open the database. Reason follows", ex);
+        }
+        
         if (!exists) {
             updateSchema();
         }
