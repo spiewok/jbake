@@ -156,28 +156,28 @@ public class Oven {
      * @throws JBakeException
      */
     public void bake() {
-        ContentStore db = null;
+        ContentStore contentStore = null;
 
         try {
-            db = DBUtil.createDataStore(config.getString(Keys.DB_STORE), config.getString(Keys.DB_PATH));
+            contentStore = DBUtil.createDataStore(config.getString(Keys.DB_STORE), config.getString(Keys.DB_PATH));
 
             // Mark docs as checked.
             // Checked Docs maybe deleted as last step, if they are not verified to
             // exist in the file system.
             for (String docType : DocumentTypes.getDocumentTypes()) {
-                db.markAllNotChecked(docType);
+                contentStore.markAllNotChecked(docType);
             }
 
             updateDocTypesFromConfiguration();
-            DBUtil.updateSchema(db);
+            DBUtil.updateSchema(contentStore);
 
             final long start = new Date().getTime();
             LOGGER.info("Baking has started...");
 
-            clearCacheIfNeeded(db);
+            clearCacheIfNeeded(contentStore);
 
             // process source content
-            Crawler crawler = new Crawler(db, source, config);
+            Crawler crawler = new Crawler(contentStore, source, config);
             crawler.crawl(contentsPath);
 
             LOGGER.info("Content detected:");
@@ -190,15 +190,15 @@ public class Oven {
 
             //Delete all not checked documents
             for (String docType : DocumentTypes.getDocumentTypes()) {
-                db.deleteNotChecked(docType);
+                contentStore.deleteNotChecked(docType);
             }
 
             //Render everything
-            Renderer renderer = new Renderer(db, destination, templatesPath, config);
+            Renderer renderer = new Renderer(contentStore, destination, templatesPath, config);
 
             for (RenderingTool tool : ServiceLoader.load(RenderingTool.class)) {
                 try {
-                    renderedCount += tool.render(renderer, db, destination, templatesPath, config);
+                    renderedCount += tool.render(renderer, contentStore, destination, templatesPath, config);
                 } catch (RenderingException e) {
                     errors.add(e.getMessage());
                 }
@@ -206,7 +206,7 @@ public class Oven {
 
             // mark docs as rendered
             for (String docType : DocumentTypes.getDocumentTypes()) {
-                db.markConentAsRendered(docType);
+                contentStore.markConentAsRendered(docType);
             }
 
             copyAssets();
@@ -220,8 +220,9 @@ public class Oven {
                 LOGGER.error("Failed to bake {} item(s)!", errors.size());
             }
         } finally {
-            if (db != null) {
-                db.close();
+            if (contentStore != null) {
+                LOGGER.info(String.format("Closing database: %s", contentStore.toString()));
+                DBUtil.close();
             }
         }
     }

@@ -6,8 +6,12 @@ import com.orientechnologies.orient.core.record.impl.ODocument;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DBUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DBUtil.class);    
+    
     private static ContentStore contentStore;
     
     public static ContentStore createDataStore(final String type, String name) {
@@ -17,7 +21,11 @@ public class DBUtil {
         return contentStore;
     }
     
-    public static void closeDataStore() {
+    public static void close() {
+        if(contentStore!=null) {
+            contentStore.close();
+        }
+        
         contentStore = null;
     }
     
