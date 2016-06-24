@@ -66,21 +66,22 @@ public class ContentStore {
 
     public ContentStore(final String type, String name) {
 
-        db = new ODatabaseDocumentTx(type + ":" + name);
-        boolean exists = db.exists();
-        if (!exists) {
-            db.create();
-        }
-
         try {
-        db.activateOnCurrentThread();
-        db.open("admin", "admin");
+            db = new ODatabaseDocumentTx(type + ":" + name);
+            boolean exists = db.exists();
+            
+            if (!exists) {
+                db.create();
+            }
+
+            db.activateOnCurrentThread();
+            db.open("admin", "admin");
+
+            if (!exists) {
+                updateSchema();
+            }
         } catch (Exception ex) {
             LOGGER.error("Couldn't open the database. Reason follows", ex);
-        }
-        
-        if (!exists) {
-            updateSchema();
         }
     }
 
