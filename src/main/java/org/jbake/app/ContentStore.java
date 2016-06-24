@@ -37,7 +37,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.codehaus.plexus.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import org.jbake.model.DocumentTypes;
 import org.slf4j.Logger;
