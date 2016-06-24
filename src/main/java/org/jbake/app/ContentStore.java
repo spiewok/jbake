@@ -31,11 +31,13 @@ import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.OCommandSQL;
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
+import java.nio.file.Paths;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.codehaus.plexus.util.StringUtils;
 
 import org.jbake.model.DocumentTypes;
 import org.slf4j.Logger;
@@ -69,6 +71,14 @@ public class ContentStore {
         boolean exists = false;
         
         try {
+            
+            String databaseDir = System.getenv("OPENSHIFT_DATA_DIR");
+            
+            if(!StringUtils.isBlank(databaseDir)) {
+                name = Paths.get(databaseDir, name).toAbsolutePath().toString();
+                LOGGER.info(String.format("Trying to open Database from: %s", name));
+            }
+            
             db = new ODatabaseDocumentTx(type + ":" + name);
             exists = db.exists();
             
@@ -82,6 +92,8 @@ public class ContentStore {
         db.activateOnCurrentThread();
         
         try {
+            LOGGER.info(String.format("Trying to open Database now -> %s:%s", type, name));
+
             db.open("admin", "admin");
         } catch (Exception ex) {
             LOGGER.error(String.format("Couldn't open the database. Reason", ex.getMessage()), ex);
