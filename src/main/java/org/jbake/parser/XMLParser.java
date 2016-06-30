@@ -26,9 +26,12 @@ package org.jbake.parser;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.extended.NamedMapConverter;
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.configuration.Configuration;
 import org.jbake.model.ContentXmlModel;
+import org.pegdown.Extensions;
+import org.pegdown.PegDownProcessor;
 
 /**
  *
@@ -56,7 +59,96 @@ public class XMLParser implements ParserEngine {
         xstream.processAnnotations(ContentXmlModel.class);
         ContentXmlModel model = (ContentXmlModel) xstream.fromXML(file);
 
-        return model.getContent();
+        Map<String, Object> renderedContent = this.getRenderedContent(model.getContent());
+        return renderedContent;
+    }
+
+
+
+    private Map<String, Object> getRenderedContent(Map<String, Object> unrenderedContent) {
+
+        String[] mdExts = new String[]{"HARDWRAPS", "AUTOLINKS", "FENCED_CODE_BLOCKS", "DEFINITIONS"};
+
+        int extensions = Extensions.NONE;
+        if (mdExts.length > 0) {
+            for (int index = 0; index < mdExts.length; index++) {
+                String ext = mdExts[index];
+                if (ext.startsWith("-")) {
+                    ext = ext.substring(1);
+                    extensions = removeExtension(extensions, extensionFor(ext));
+                } else {
+                    if (ext.startsWith("+")) {
+                        ext = ext.substring(1);
+                    }
+                    extensions = addExtension(extensions, extensionFor(ext));
+                }
+            }
+        }
+
+        long maxParsingTime = PegDownProcessor.DEFAULT_MAX_PARSING_TIME;
+
+        PegDownProcessor pegdownProcessor = new PegDownProcessor(extensions, maxParsingTime);
+
+        Map<String, Object> renderedContent = new HashMap<>();
+        
+        for (String key : unrenderedContent.keySet()) {
+            String content = (String) unrenderedContent.get(key);
+            renderedContent.put(key, pegdownProcessor.markdownToHtml(content));
+        }
+
+        return renderedContent;
+    }
+
+
+
+    private int extensionFor(String name) {
+        int extension = Extensions.NONE;
+        if (name.equals("HARDWRAPS")) {
+            extension = Extensions.HARDWRAPS;
+        } else if (name.equals("AUTOLINKS")) {
+            extension = Extensions.AUTOLINKS;
+        } else if (name.equals("FENCED_CODE_BLOCKS")) {
+            extension = Extensions.FENCED_CODE_BLOCKS;
+        } else if (name.equals("DEFINITIONS")) {
+            extension = Extensions.DEFINITIONS;
+        } else if (name.equals("ABBREVIATIONS")) {
+            extension = Extensions.ABBREVIATIONS;
+        } else if (name.equals("QUOTES")) {
+            extension = Extensions.QUOTES;
+        } else if (name.equals("SMARTS")) {
+            extension = Extensions.SMARTS;
+        } else if (name.equals("SMARTYPANTS")) {
+            extension = Extensions.SMARTYPANTS;
+        } else if (name.equals("SUPPRESS_ALL_HTML")) {
+            extension = Extensions.SUPPRESS_ALL_HTML;
+        } else if (name.equals("SUPPRESS_HTML_BLOCKS")) {
+            extension = Extensions.SUPPRESS_HTML_BLOCKS;
+        } else if (name.equals("SUPPRESS_INLINE_HTML")) {
+            extension = Extensions.SUPPRESS_INLINE_HTML;
+        } else if (name.equals("TABLES")) {
+            extension = Extensions.TABLES;
+        } else if (name.equals("WIKILINKS")) {
+            extension = Extensions.WIKILINKS;
+            //} else if (name.equals("ANCHORLINKS")) { // not available in pegdown-1.4.2
+            //    extension = Extensions.ANCHORLINKS;
+        } else if (name.equals("STRIKETHROUGH")) {
+            extension = Extensions.STRIKETHROUGH;
+        } else if (name.equals("ALL")) {
+            extension = Extensions.ALL;
+        }
+        return extension;
+    }
+
+
+
+    private int addExtension(int previousExtensions, int additionalExtension) {
+        return previousExtensions | additionalExtension;
+    }
+
+
+
+    private int removeExtension(int previousExtensions, int unwantedExtension) {
+        return previousExtensions & (~unwantedExtension);
     }
 
 }
