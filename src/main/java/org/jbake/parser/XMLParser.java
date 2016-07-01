@@ -93,7 +93,13 @@ public class XMLParser implements ParserEngine {
         
         for (String key : unrenderedContent.keySet()) {
             String content = (String) unrenderedContent.get(key);
-            renderedContent.put(key, pegdownProcessor.markdownToHtml(content));
+                    
+            if(key.equals("type") || key.equals("status")) {
+                renderedContent.put(key, content);
+            } else {
+                renderedContent.put(key, pegdownProcessor.markdownToHtml(content));            
+            }
+
         }
 
         return renderedContent;
