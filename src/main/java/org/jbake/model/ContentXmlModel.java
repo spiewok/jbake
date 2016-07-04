@@ -14,9 +14,10 @@
  */
 package org.jbake.model;
 
+import ch.apps4people.cdemodel.CDEXmlContent;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -25,18 +26,17 @@ import java.util.Map;
 @XStreamAlias("a4p-content")
 public class ContentXmlModel {
     
-    private Map<String, Object> content;
+    
+    private List<CDEXmlContent> content;
     
     public ContentXmlModel() {
-        this.content = new HashMap<>();
+        this.content = new ArrayList<>();
     }
-
-
-
+    
     /**
      * @return the content
      */
-    public Map<String, Object> getContent() {
+    public List<CDEXmlContent> getContent() {
         return content;
     }
 
@@ -45,7 +45,8 @@ public class ContentXmlModel {
     /**
      * @param content the content to set
      */
-    public void setContent(Map<String, Object> content) {
+    public void setContent(List<CDEXmlContent> content) {
         this.content = content;
     }
 }
+

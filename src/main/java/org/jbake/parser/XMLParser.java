@@ -23,12 +23,15 @@
  */
 package org.jbake.parser;
 
+import ch.apps4people.cdemodel.CDEXmlContent;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.extended.NamedMapConverter;
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.jbake.model.ContentXmlModel;
 import org.pegdown.Extensions;
 import org.pegdown.PegDownProcessor;
@@ -65,7 +68,7 @@ public class XMLParser implements ParserEngine {
 
 
 
-    private Map<String, Object> getRenderedContent(Map<String, Object> unrenderedContent) {
+    private Map<String, Object> getRenderedContent(List<CDEXmlContent> unrenderedContent) {
 
         String[] mdExts = new String[]{"HARDWRAPS", "AUTOLINKS", "FENCED_CODE_BLOCKS", "DEFINITIONS"};
 
@@ -91,14 +94,14 @@ public class XMLParser implements ParserEngine {
 
         Map<String, Object> renderedContent = new HashMap<>();
         
-        for (String key : unrenderedContent.keySet()) {
-            String content = (String) unrenderedContent.get(key);
-                    
-            if(key.equals("type") || key.equals("status")) {
-                renderedContent.put(key, content);
+        for (CDEXmlContent content : unrenderedContent) {
+
+            if(!StringUtils.isBlank(content.getMarkup()) && content.getMarkup().equals("ml")) {
+                renderedContent.put(content.getKey(), pegdownProcessor.markdownToHtml(content.getContent()));            
             } else {
-                renderedContent.put(key, pegdownProcessor.markdownToHtml(content));            
+                renderedContent.put(content.getKey(), content.getContent());
             }
+            
 
         }
 
