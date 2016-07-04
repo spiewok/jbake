@@ -24,6 +24,7 @@
 package org.jbake.parser;
 
 import ch.apps4people.cdemodel.CDEXmlContent;
+import ch.apps4people.cdemodel.ContentXmlModel;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.extended.NamedMapConverter;
 import java.io.File;
@@ -32,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
-import org.jbake.model.ContentXmlModel;
 import org.pegdown.Extensions;
 import org.pegdown.PegDownProcessor;
 
