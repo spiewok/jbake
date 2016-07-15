@@ -223,56 +223,15 @@ public class Renderer {
      * @throws Exception 
      */
     public void renderIndex(String indexFile, ContentStore db) throws Exception {
-      long totalPosts = db.countClass("post");
-      boolean paginate = config.getBoolean(Keys.PAGINATE_INDEX, false);
-      int postsPerPage = config.getInt(Keys.POSTS_PER_PAGE, -1);
-      int start = 0;
 
       Map<String, Object> model = new HashMap<String, Object>();
       model.put("renderer", renderingEngine);
       model.put("content", buildSimpleModel("masterindex"));
-      if (paginate) {
-          db.setLimit(postsPerPage);
-      }
 
       try {
-          int page = 1;
-          while (start < totalPosts) {
-              String fileName = indexFile;
 
-              if (paginate) {
-                  db.setStart(start);
-                  int index = fileName.lastIndexOf(".");
-                  if (page != 1) {
-                      String previous = fileName.substring(0, index) +  (page > 2 ? page-1 : "") + 
-                              fileName.substring(index);
-                      model.put("previousFileName", previous);
-                  } else {
-                      model.remove("previousFileName");
-                  }
-                  
-                  // If this iteration won't consume the remaining posts, calculate
-                  // the next file name
-                  if ((start + postsPerPage) < totalPosts) {
-                      model.put("nextFileName", fileName.substring(0, index) + (page+1) +
-                          fileName.substring(index));
-                  } else {
-                      model.remove("nextFileName");
-                  }
-                  // Add page number to file name
-                  fileName = fileName.substring(0, index) + (page > 1 ? page : "") +
-                          fileName.substring(index);
-              }
-              render(new DefaultRenderingConfig(fileName, "masterindex"));
+          render(new DefaultRenderingConfig(indexFile, "masterindex"));
               
-              if (paginate) {
-                  start += postsPerPage;
-                  page++;
-              } else {
-                  break; // TODO: eww
-              }
-          }
-          db.resetPagination();
       } catch (Exception e) {
           throw new Exception("Failed to render index. Cause: " + e.getMessage());
       }
@@ -286,7 +245,9 @@ public class Renderer {
      * @see <a href="http://www.sitemaps.org/">Sitemap protocol</a>
      */
     public void renderSitemap(String sitemapFile) throws Exception {
-    	render(new DefaultRenderingConfig(sitemapFile, "sitemap"));
+        if ((new File(sitemapFile)).exists()) {
+        	render(new DefaultRenderingConfig(sitemapFile, "sitemap"));        
+        }
     }
 
     /**
@@ -296,7 +257,9 @@ public class Renderer {
      * @throws Exception 
      */
     public void renderFeed(String feedFile) throws Exception {
-    	render(new DefaultRenderingConfig(feedFile, "feed"));
+        if ((new File(feedFile)).exists()) {
+        	render(new DefaultRenderingConfig(feedFile, "feed"));
+        }
     }
 
     /**
@@ -306,7 +269,9 @@ public class Renderer {
      * @throws Exception 
      */
     public void renderArchive(String archiveFile) throws Exception {
-    	render(new DefaultRenderingConfig(archiveFile, "archive"));
+        if ((new File(archiveFile)).exists()) {
+        	render(new DefaultRenderingConfig(archiveFile, "archive"));
+        }
     }
 
     /**

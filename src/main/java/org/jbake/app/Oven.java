@@ -203,7 +203,8 @@ public class Oven {
                 try {
                     renderedCount += tool.render(renderer, contentStore, destination, templatesPath, config);
                 } catch (RenderingException e) {
-                    errors.add(e.getMessage());
+                    //Probably template not here. But that's OK.
+                    //errors.add(e.getMessage());
                 }
             }
 
